@@ -215,6 +215,17 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
+-- [[ Remaps ]]
+vim.keymap.set({ 'n', 'v' }, '<leader>y', [["+y]], { desc = 'Copy selected text to system clipboard' })
+--vim.keymap.set({ 'n', 'v' }, '<leader>p', [["+p]], { desc = 'Paste from system clipboard' })
+vim.keymap.set('n', '<leader>pv', vim.cmd.Ex, { desc = 'Open tree file' })
+
+-- [[ Indentation ]]
+vim.opt.tabstop = 8
+vim.opt.softtabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = true
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -627,7 +638,7 @@ require('lazy').setup({
           },
         } or {},
         virtual_text = {
-          source = 'if_many',
+          --source = 'if_many',
           spacing = 2,
           format = function(diagnostic)
             local diagnostic_message = {
@@ -658,7 +669,7 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -668,8 +679,46 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
         --
+
+        jdtls = {
+          settings = {
+            java = {
+              signatureHelp = { enabled = true },
+              maven = {
+                downloadSources = true,
+              },
+              referencesCodeLens = {
+                enabled = true,
+              },
+              references = {
+                includeDecompiledSources = true,
+              },
+              inlayHints = {
+                parameterNames = {
+                  enabled = 'all', -- literals, all, none
+                },
+              },
+              format = {
+                enabled = false,
+              },
+            },
+            import = { -- imports doesn't work either
+              gradle = {
+                enabled = true,
+                wrapper = {
+                  enabled = true,
+                  checksums = {
+                    sha256 = '81a82aaea5abcc8ff68b3dfcb58b3c3c429378efd98e7433460610fecd7ae45f',
+                    allowed = true,
+                  },
+                },
+              },
+            },
+          },
+          bundles = {},
+        },
 
         lua_ls = {
           -- cmd = { ... },
@@ -712,11 +761,12 @@ require('lazy').setup({
         handlers = {
           function(server_name)
             local server = servers[server_name] or {}
+            local lspconfig = require 'lspconfig'
             -- This handles overriding only values explicitly passed
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
+            lspconfig[server_name].setup(server)
           end,
         },
       }
@@ -757,6 +807,8 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        typescript = { 'prettierd', 'biome', stop_after_first = true },
+        javascript = { 'prettierd', 'biome', stop_after_first = true },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -890,19 +942,67 @@ require('lazy').setup({
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
+    -- priority = 1000, -- Make sure to load this before all the other start plugins.
+    -- config = function()
+    --   ---@diagnostic disable-next-line: missing-fields
+    --   require('tokyonight').setup {
+    --     styles = {
+    --       comments = { italic = false }, -- Disable italics in comments
+    --     },
+    --   }
+    --
+    --   -- Load the colorscheme here.
+    --   -- Like many other themes, this one has different styles, and you could load
+    --   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+    --   vim.cmd.colorscheme 'tokyonight-day'
+    -- end,
+  },
 
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+  {
+    'morhetz/gruvbox',
+    -- priority = 1000,
+    -- config = function()
+    --   vim.o.background = 'light'
+    --   vim.cmd.colorscheme 'gruvbox'
+    -- end,
+  },
+
+  {
+    'maxmx03/solarized.nvim',
+    -- lazy = false,
+    -- priority = 1000,
+    -- opts = {},
+    -- config = function(_, opts)
+    --   vim.o.termguicolors = true
+    --   vim.o.background = 'light'
+    --   require('solarized').setup(opts)
+    --   vim.cmd.colorscheme 'solarized'
+    -- end,
+  },
+
+  {
+    'Mofiqul/vscode.nvim',
+    -- config = function()
+    --   require('vscode').setup { style = 'light' }
+    --   vim.cmd.colorscheme 'vscode'
+    -- end,
+  },
+
+  {
+    'xero/miasma.nvim',
+    -- lazy = false,
+    -- priority = 1000,
+    -- config = function()
+    --   vim.cmd 'colorscheme miasma'
+    -- end,
+  },
+
+  {
+    'blazkowolf/gruber-darker.nvim',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      vim.cmd 'colorscheme gruber-darker'
     end,
   },
 
@@ -972,6 +1072,29 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  {
+    'ThePrimeagen/harpoon',
+    config = function()
+      local mark = require 'harpoon.mark'
+      local ui = require 'harpoon.ui'
+      local term = require 'harpoon.term'
+
+      vim.keymap.set('n', '<leader>a', mark.add_file, { desc = 'Mark file to visit later' })
+      vim.keymap.set('n', '<leader>m', ui.toggle_quick_menu, { desc = 'Open marked files menu' })
+      for i = 1, 9 do
+        vim.keymap.set('n', '<leader>' .. i, function()
+          ui.nav_file(i)
+        end, { desc = 'Go to marked file ' .. i })
+
+        vim.keymap.set('n', '<leader>t' .. i, function()
+          term.gotoTerminal(i)
+        end, { desc = 'Go to terminal ' .. i })
+      end
+    end,
+  },
+
+  { 'Exafunction/codeium.vim' },
+
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -982,11 +1105,11 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.indent_line',
+  --require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
